@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-site"
+version = "0.1.0"
+description = "Crawl a website and answer a question about it. Jev picks the relevant page, Claude writes the answer."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "crawl4ai>=0.9.4",
+    "python-dotenv",
+    "requests",
+]
+
+[project.scripts]
+ask-site = "ask_site.cli:main"
+ask-site-setup = "ask_site.setup:main"
+
+[tool.setuptools]
+packages = ["ask_site"]

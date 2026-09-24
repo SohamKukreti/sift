@@ -35,10 +35,14 @@ def ask_jev(question, url, text):
             },
         },
     }
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY is not set. Put it in a .env file or export it.")
+
     response = requests.post(
         JEV_URL,
         json=request,
-        headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
+        headers={"Authorization": f"Bearer {api_key}"},
         timeout=60,
     )
     response.raise_for_status()

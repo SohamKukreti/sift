@@ -1,0 +1,16 @@
+{
+  "name": "ask-site",
+  "owner": {
+    "name": "Soham Kukreti"
+  },
+  "metadata": {
+    "description": "Tools to answer questions about websites."
+  },
+  "plugins": [
+    {
+      "name": "ask-site",
+      "source": "./",
+      "description": "Crawl a website and answer a question about it, using Jev to find the relevant page."
+    }
+  ]
+}
