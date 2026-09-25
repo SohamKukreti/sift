@@ -12,6 +12,10 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 # Jev reads up to 32k tokens. 50k characters is about 12.5k tokens: a safe size.
 CHUNK_SIZE = 50_000
 
+# Links to files that have no text to read. We never visit these.
+SKIPPED_FILES = ["*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp", "*.svg", "*.ico",
+                 "*.mp3", "*.mp4", "*.webm", "*.zip", "*.gz", "*.exe", "*.dmg", "*.apk"]
+
 # Words that say nothing about which link to follow.
 STOPWORDS = set("""
     a an the is are was were be been being do does did i me my we our you your it its
@@ -50,7 +54,10 @@ def make_crawl_strategy(start_url, filters, keywords, max_pages, max_depth):
         max_depth=max_depth,
         max_pages=max_pages,
         include_external=False,
-        filter_chain=FilterChain([make_url_filter(start_url, filters)]),
+        filter_chain=FilterChain([
+            make_url_filter(start_url, filters),
+            URLPatternFilter(SKIPPED_FILES, reverse=True),  # reverse: block these instead of allowing
+        ]),
         url_scorer=KeywordRelevanceScorer(keywords=keywords),
     )
 

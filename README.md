@@ -11,24 +11,29 @@ Sending every page of a website to an LLM is slow and expensive. Jev costs a
 fraction of a cent for a whole crawl, so the LLM reads one page instead of fifty.
 
 ```
-$ sift https://fossunited.org/indiafoss/2026 \
-    "Does IndiaFOSS 2026 offer on-spot lightning talks that I can sign up for after arriving at the venue?" \
-    --filter indiafoss
+$ sift https://www.jiit.ac.in "Will everyone be given the degree on stage at JIIT convocation 2026?"
 
-Keywords : ['spot', 'lightning', 'talks', 'sign', 'venue']
-[ 1] depth=0  jev=0.17  https://fossunited.org/indiafoss/2026
-[ 2] depth=1  jev=0.08  https://fossunited.org/indiafoss/2026/devrooms/design
-[ 3] depth=1  jev=0.04  https://forum.fossunited.org/t/diversity-support-is-back-for-indiafoss-2026/8499
-[ 4] depth=1  jev=0.07  https://fossunited.org/c/indiafoss/2026/workshops
-[ 5] depth=1  jev=0.73  https://fossunited.org/c/indiafoss/2026communi-con  <- relevant, asking for an answer
+Keywords : ['everyone', 'degree', 'stage', 'convocation', '2026']
+[ 1] depth=0  jev=0.14  https://www.jiit.ac.in
+[ 2] depth=1  jev=0.08  https://www.jiit.ac.in/research-&-development/phd-degrees-awarded
+[ 3] depth=1  jev=0.03  https://www.jiit.ac.in/uploads/FDP_2026_Brochure_65b6d379b8.pdf
+  ...
+[10] depth=1  jev=0.05  https://www.jiit.ac.in/uploads/Medal_Winners_2026_99c7949f90.pdf
+[11] depth=1  jev=0.02  https://www.jiit.ac.in/uploads/Refund_Policy_2026_2_a27b461d05.pdf
+[12] depth=1  jev=0.97  https://www.jiit.ac.in/uploads/Student_Invitation_12th_Convocation_6ab982354a.pdf  <- relevant, asking for an answer
 
-Pages crawled: 5
-Jev cost: $0.000580
+Pages crawled: 12
+Jev cost: $0.001013
 
-No. Talks need a proposal first, then community voting. No walk-in sign-up at the venue.
+No. Only medal winners and PhD graduates get their degree on stage. Other students stand at
+their seats for conferment, then collect the actual certificate later from designated rooms.
 
-Source: https://fossunited.org/c/indiafoss/2026communi-con
+Source: https://www.jiit.ac.in/uploads/Student_Invitation_12th_Convocation_6ab982354a.pdf
 ```
+
+The answer was in a one-page PDF invitation, linked from the home page. A search
+engine won't surface it and an LLM can't know it. sift checked 12 pages, called
+the LLM once, and spent a tenth of a cent on the filtering.
 
 ## How it works
 
@@ -58,7 +63,9 @@ Source: https://fossunited.org/c/indiafoss/2026communi-con
 1. **Crawl**: [crawl4ai](https://github.com/unclecode/crawl4ai) does a
    best-first deep crawl. It only follows links that match `--filter` (or stay
    on the same domain), and visits links whose URL matches keywords from your
-   question first. Menus and footers are removed from each page.
+   question first. Menus and footers are removed from each page. PDF links are
+   downloaded and read too, since that is where universities and events often
+   put the real details. Images and other media are skipped.
 2. **Decide**: Jev (by TypeSafe, served on OpenRouter) answers one yes/no
    question per page and returns a probability. Long pages are split into
    chunks and each chunk is checked.
@@ -145,6 +152,7 @@ sift/
   crawl.py        crawl4ai setup: filters, keyword ranking, clean page text
   jev.py          one Jev call: "does this page answer the question?"
   claude_cli.py   one Claude call: a short answer from one page
+  pdf.py          reads PDF links (the browser can't)
   search.py       the loop: crawl, check with Jev, answer, stop
   cli.py          the sift command
   setup.py        the sift-setup command (downloads the browser)

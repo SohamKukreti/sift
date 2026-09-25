@@ -7,6 +7,7 @@ from crawl4ai import AsyncWebCrawler, BrowserConfig
 
 from .crawl import keywords_from_question, make_crawl_config, make_crawl_strategy, page_text, split_into_chunks
 from .jev import ask_jev
+from .pdf import is_pdf, pdf_text
 
 # A page is "relevant" when Jev's probability is at or above this.
 RELEVANCE_THRESHOLD = 0.6
@@ -61,15 +62,17 @@ async def search_site(
 
     async with AsyncWebCrawler(config=BrowserConfig(headless=headless, verbose=False)) as crawler:
         async for page in await crawler.arun(url, config=config):
+            # crawl4ai can hand out a few more pages than max_pages, so we count too.
+            if result.pages_seen >= max_pages:
+                break
             result.pages_seen += 1
             label = f"[{result.pages_seen:>2}] depth={page.metadata.get('depth')}"
 
-            if not page.success:
-                reason = (page.error_message or "unknown error").strip().splitlines()[0][:100]
-                log(f"{label}  FAILED   {page.url}  ({reason})")
+            try:
+                text = read_page(page)
+            except Exception as error:
+                log(f"{label}  FAILED   {page.url}  ({first_line(error)})")
                 continue
-
-            text = page_text(page)
 
             if crawl_only:
                 log(f"{label}  {len(text):>6} chars  {page.url}")
@@ -84,6 +87,20 @@ async def search_site(
 
     strategy.cancel()
     return result
+
+
+def read_page(page):
+    """The text of a crawled page. PDFs are downloaded and read separately."""
+    if is_pdf(page.url):
+        return pdf_text(page.url)
+    if not page.success:
+        raise RuntimeError(page.error_message or "unknown error")
+    return page_text(page)
+
+
+def first_line(error):
+    message = str(error).strip()
+    return message.splitlines()[0][:100] if message else type(error).__name__
 
 
 async def check_page(question, url, text, answerer, result, label, log):
