@@ -10,15 +10,15 @@ Find the page on a website that answers a question, then answer from that page.
 ## Run it
 
 ```bash
-uvx --from "${CLAUDE_PLUGIN_ROOT}" sift <url> "<question>" --no-claude [options]
+uvx --from "${CLAUDE_PLUGIN_ROOT}" sift <url> "<question>" --no-llm [options]
 ```
 
 - Always pass a full URL, starting with `https://`.
 - Pass the user's question **word for word**. Don't shorten or reword it: Jev's score depends
   on the exact words, and a reworded question can push the right page below the threshold.
   Only remove the URL from it if the user put the URL inside the question.
-- Always pass `--no-claude`. It makes the command print the relevant page instead of calling
-  Claude again, because you are Claude and you write the answer.
+- Always pass `--no-llm`. It makes the command print the relevant page instead of asking
+  another LLM, because you read the page and write the answer yourself.
 - The crawl can take a minute. Don't run it in the background.
 
 ## Options

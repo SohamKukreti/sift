@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from dotenv import find_dotenv, load_dotenv
 
-from .claude_cli import ask_claude
+from .llm import DEFAULT_MODEL, make_answerer
 from .search import search_site
 
 
@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog="sift",
         description="Crawl a website and answer a question about it. "
-                    "Jev picks the relevant page, Claude writes the answer.",
+                    "Jev picks the relevant page, an LLM writes the answer.",
     )
     parser.add_argument("url", help="Page to start crawling from.")
     parser.add_argument("question", help="What you want to know.")
@@ -31,12 +31,13 @@ def parse_args():
     parser.add_argument("--max-depth", type=int, default=3, help="How many links deep to go (default 3).")
     parser.add_argument(
         "--crawl-only", action="store_true",
-        help="Only list the pages. No Jev or Claude calls, so it costs nothing.",
+        help="Only list the pages. No Jev or LLM calls, so it costs nothing.",
     )
     parser.add_argument(
-        "--no-claude", action="store_true",
-        help="Don't call Claude. Print the first relevant page's text instead.",
+        "--no-llm", action="store_true",
+        help="Don't call the LLM. Print the first relevant page's text instead.",
     )
+    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"OpenRouter model for the answer (default {DEFAULT_MODEL}).")
     parser.add_argument("--show-browser", action="store_true", help="Show the browser window while crawling.")
     return parser.parse_args()
 
@@ -58,7 +59,7 @@ def main():
         keywords=args.keywords,
         max_pages=args.max_pages,
         max_depth=args.max_depth,
-        answerer=None if args.no_claude else ask_claude,
+        answerer=None if args.no_llm else make_answerer(args.model),
         crawl_only=args.crawl_only,
         headless=not args.show_browser,
     ))
@@ -66,7 +67,10 @@ def main():
     print(f"\nPages crawled: {result.pages_seen}")
     if args.crawl_only:
         return
-    print(f"Jev cost: ${result.jev_cost:.6f}\n")
+    print(f"Jev cost: ${result.jev_cost:.6f}")
+    if not args.no_llm:
+        print(f"LLM cost: ${result.llm_cost:.6f}  ({args.model})")
+    print()
 
     if not result.found:
         print("No answer found.")

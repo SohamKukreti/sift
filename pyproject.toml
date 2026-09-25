@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sift-crawl"
 version = "0.1.0"
-description = "Crawl a website and answer a question about it. Jev picks the relevant page, Claude writes the answer."
+description = "Crawl a website and answer a question about it. Jev picks the relevant page, an LLM writes the answer."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

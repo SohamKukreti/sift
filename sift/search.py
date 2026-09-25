@@ -1,7 +1,7 @@
 """The main loop: crawl pages one by one until one of them answers the question."""
 
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -15,8 +15,8 @@ RELEVANCE_THRESHOLD = 0.6
 # Pages with less text than this (login walls, JavaScript-only pages) are skipped.
 MIN_PAGE_LENGTH = 50
 
-# Takes (question, url, text) and returns an answer, or None if the text has no answer.
-Answerer = Callable[[str, str, str], Optional[str]]
+# Takes (question, url, text) and returns (answer or None if the text has no answer, cost in USD).
+Answerer = Callable[[str, str, str], Tuple[Optional[str], float]]
 
 
 @dataclass
@@ -27,6 +27,7 @@ class SearchResult:
     answer: Optional[str] = None     # the written answer, if an answerer was given
     pages_seen: int = 0
     jev_cost: float = 0.0
+    llm_cost: float = 0.0
 
     @property
     def found(self):
@@ -49,7 +50,7 @@ async def search_site(
     """Crawl `url` best-first and stop at the first page that answers `question`.
 
     Every page is checked by Jev. When a page passes:
-      - with an `answerer` (e.g. Claude), we ask it for the answer. If it finds
+      - with an `answerer` (an LLM), we ask it for the answer. If it finds
         none, the crawl goes on.
       - without one, we stop and return the page text, so the caller can answer.
     """
@@ -122,7 +123,8 @@ async def check_page(question, url, text, answerer, result, label, log):
             return True
 
         log(f"{label}  jev={score:.2f}  {url}  <- relevant, asking for an answer")
-        answer = answerer(question, url, chunk)
+        answer, cost = answerer(question, url, chunk)
+        result.llm_cost += cost
         if answer:
             result.url, result.page_text, result.score, result.answer = url, chunk, score, answer
             return True

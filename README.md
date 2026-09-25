@@ -24,16 +24,17 @@ Keywords : ['everyone', 'degree', 'stage', 'convocation', '2026']
 
 Pages crawled: 12
 Jev cost: $0.001013
+LLM cost: $0.000321  (deepseek/deepseek-v4.1-flash)
 
-No. Only medal winners and PhD graduates get their degree on stage. Other students stand at
-their seats for conferment, then collect the actual certificate later from designated rooms.
-
+No. Only all medals and PhD degrees will be awarded in person on the stage; all other graduates
+will rise at their respective seats for conferment of the degree and then collect their degree
+certificates from designated rooms after the ceremony.
 Source: https://www.jiit.ac.in/uploads/Student_Invitation_12th_Convocation_6ab982354a.pdf
 ```
 
 The answer was in a one-page PDF invitation, linked from the home page. A search
 engine won't surface it and an LLM can't know it. sift checked 12 pages, called
-the LLM once, and spent a tenth of a cent on the filtering.
+the LLM once, and spent less than a cent and a half in total.
 
 ## How it works
 
@@ -51,7 +52,7 @@ the LLM once, and spent a tenth of a cent on the filtering.
           next page             │
                                 ▼
                  ┌──────────────┐
-                 │    Claude    │  reads only this page and answers,
+                 │     LLM      │  reads only this page and answers,
                  └──────┬───────┘  or says there is no answer here
                         │
         no answer ◀─────┴───▶ answer
@@ -69,19 +70,20 @@ the LLM once, and spent a tenth of a cent on the filtering.
 2. **Decide**: Jev (by TypeSafe, served on OpenRouter) answers one yes/no
    question per page and returns a probability. Long pages are split into
    chunks and each chunk is checked.
-3. **Answer**: the first page that scores 0.6 or more is answered by Claude
-   (through the local `claude` CLI, with tools off). With `--no-claude`, the
-   page is printed instead. The skill uses this, because Claude is already
-   the one asking.
+3. **Answer**: the first page that scores 0.6 or more goes to an LLM on
+   OpenRouter (default: the open-weight
+   [DeepSeek V4.1 Flash](https://openrouter.ai/deepseek/deepseek-v4.1-flash)).
+   It answers from that page only, or says there is no answer there. With
+   `--no-llm`, the page is printed instead. The skill uses this, because
+   Claude is already the one asking.
 
 The crawl stops at the first answer, or at `--max-pages` / `--max-depth`.
 
 ## What you need
 
-- An [OpenRouter API key](https://openrouter.ai/settings/keys) for Jev.
+- An [OpenRouter API key](https://openrouter.ai/settings/keys). One key covers both
+  Jev and the answer model.
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (or Python 3.10+ and pip).
-- For written answers on the command line:
-  [Claude Code](https://claude.com/claude-code), installed and logged in.
 
 Put your key in your environment, or in a `.env` file in the folder you run from:
 
@@ -129,8 +131,9 @@ sift <url> "<question>" [options]
 | `--keywords WORD ...` | words from your question | Words used to rank links. They are matched against the URL, so pick URL-like words (`schedule`, `cfp`, `faq`). |
 | `--max-pages N` | 50 | Stop after `N` pages. |
 | `--max-depth N` | 3 | How many links deep to go from the start page. |
-| `--crawl-only` | off | Only list the pages that would be crawled. No Jev or Claude calls, so it costs nothing. Useful for tuning filters. |
-| `--no-claude` | off | Don't call Claude. Print the relevant page instead. |
+| `--crawl-only` | off | Only list the pages that would be crawled. No Jev or LLM calls, so it costs nothing. Useful for tuning filters. |
+| `--no-llm` | off | Don't call the LLM. Print the relevant page instead. |
+| `--model NAME` | `deepseek/deepseek-v4.1-flash` | Any [OpenRouter model](https://openrouter.ai/models) for the answer. |
 | `--show-browser` | off | Show the browser window while crawling. Nice for demos. |
 
 Examples:
@@ -151,7 +154,8 @@ sift https://fossunited.org/indiafoss/2026 "When is the keynote?" \
 sift/
   crawl.py        crawl4ai setup: filters, keyword ranking, clean page text
   jev.py          one Jev call: "does this page answer the question?"
-  claude_cli.py   one Claude call: a short answer from one page
+  llm.py          one LLM call: a short answer from one page
+  openrouter.py   sends requests to OpenRouter (used by jev.py and llm.py)
   pdf.py          reads PDF links (the browser can't)
   search.py       the loop: crawl, check with Jev, answer, stop
   cli.py          the sift command
@@ -167,9 +171,10 @@ Settings you might want to change:
 | `RELEVANCE_THRESHOLD`: how sure Jev must be before we ask for an answer | `sift/search.py` | `0.6` |
 | `MIN_PAGE_LENGTH`: skip pages with less text (login walls) | `sift/search.py` | `50` characters |
 | `CHUNK_SIZE`: how much text Jev sees per call | `sift/crawl.py` | `50_000` characters |
-| Claude model | `sift/claude_cli.py` | `sonnet` |
+| `DEFAULT_MODEL`: the answer model | `sift/llm.py` | `deepseek/deepseek-v4.1-flash` |
 
 ## Cost
 
 Jev charges only for input tokens, and the price is low: a 50-page crawl costs
-about a cent. The answer step runs once per question in most cases.
+about a cent. The answer step runs once per question in most cases, and costs
+a fraction of a cent with the default model.
