@@ -74,56 +74,38 @@ the LLM once, and spent less than a cent and a half in total.
    OpenRouter (default: the open-weight
    [DeepSeek V4.1 Flash](https://openrouter.ai/deepseek/deepseek-v4.1-flash)).
    It answers from that page only, or says there is no answer there. With
-   `--no-llm`, the page is printed instead. The skill uses this, because
-   Claude is already the one asking.
+   `--no-llm`, the page is printed instead.
 
 The crawl stops at the first answer, or at `--max-pages` / `--max-depth`.
 
-## What you need
+## Quick start
 
-- An [OpenRouter API key](https://openrouter.ai/settings/keys). One key covers both
-  Jev and the answer model.
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (or Python 3.10+ and pip).
-
-Put your key in your environment, or in a `.env` file in the folder you run from:
+You need an [OpenRouter API key](https://openrouter.ai/settings/keys) and
+[uv](https://docs.astral.sh/uv/getting-started/installation/). One key covers
+both Jev and the answer model.
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...
-```
 
-The crawler uses a headless browser. Install it once:
-
-```bash
+# once: download the headless browser the crawler uses
 uvx --from git+https://github.com/SohamKukreti/sift sift-setup
-```
 
-## Two ways to use it
-
-### 1. In Claude Code (a skill)
-
-```
-/plugin marketplace add SohamKukreti/sift
-/plugin install sift@sift
-```
-
-Then just ask: *"Check fossunited.org/indiafoss/2026: can I give a talk without applying first?"*
-
-The `sift` skill tells Claude when to crawl a site and how to run the
-`sift` command. Claude reads the page that Jev picks and answers from it.
-
-### 2. On the command line
-
-```bash
+# ask a question
 uvx --from git+https://github.com/SohamKukreti/sift sift <url> "<question>" [options]
 ```
 
-Or install it:
+You can also put the key in a `.env` file in the folder you run from.
+
+To install it as a normal command instead (Python 3.10+):
 
 ```bash
 git clone https://github.com/SohamKukreti/sift && cd sift
 pip install -e .
+sift-setup
 sift <url> "<question>" [options]
 ```
+
+## Options
 
 | Option | Default | What it does |
 | --- | --- | --- |
@@ -131,9 +113,9 @@ sift <url> "<question>" [options]
 | `--keywords WORD ...` | words from your question | Words used to rank links. They are matched against the URL, so pick URL-like words (`schedule`, `cfp`, `faq`). |
 | `--max-pages N` | 50 | Stop after `N` pages. |
 | `--max-depth N` | 3 | How many links deep to go from the start page. |
-| `--crawl-only` | off | Only list the pages that would be crawled. No Jev or LLM calls, so it costs nothing. Useful for tuning filters. |
-| `--no-llm` | off | Don't call the LLM. Print the relevant page instead. |
 | `--model NAME` | `deepseek/deepseek-v4.1-flash` | Any [OpenRouter model](https://openrouter.ai/models) for the answer. |
+| `--no-llm` | off | Don't call the answer model. Print the relevant page instead. |
+| `--crawl-only` | off | Only list the pages that would be crawled. No Jev or LLM calls, so it costs nothing. Useful for tuning filters. |
 | `--show-browser` | off | Show the browser window while crawling. Nice for demos. |
 
 Examples:
@@ -146,7 +128,25 @@ sift https://fossunited.org/indiafoss/2026 "Is there childcare?" \
 # Push the crawl towards the schedule
 sift https://fossunited.org/indiafoss/2026 "When is the keynote?" \
   --filter indiafoss --keywords schedule keynote
+
+# Use a different answer model
+sift https://www.jiit.ac.in "Is there a dress code for convocation?" \
+  --model google/gemini-3.1-flash-lite
 ```
+
+## Optional: use it from an AI coding agent
+
+The repo also ships a skill (a short instruction file for an AI agent) in
+`skills/sift/`, packaged as a Claude Code plugin:
+
+```
+/plugin marketplace add SohamKukreti/sift
+/plugin install sift@sift
+```
+
+Then ask: *"Check fossunited.org/indiafoss/2026: can I give a talk without applying first?"*
+The agent runs `sift --no-llm`, reads the page that Jev picked, and writes the
+answer itself.
 
 ## Project layout
 
@@ -160,8 +160,8 @@ sift/
   search.py       the loop: crawl, check with Jev, answer, stop
   cli.py          the sift command
   setup.py        the sift-setup command (downloads the browser)
-skills/sift/      the Claude Code skill
-.claude-plugin/   plugin + marketplace files, so the skill installs with /plugin
+skills/sift/      optional skill for AI coding agents
+.claude-plugin/   plugin files, so the skill installs with /plugin
 ```
 
 Settings you might want to change:
@@ -175,6 +175,18 @@ Settings you might want to change:
 
 ## Cost
 
-Jev charges only for input tokens, and the price is low: a 50-page crawl costs
-about a cent. The answer step runs once per question in most cases, and costs
-a fraction of a cent with the default model.
+Everything runs on one OpenRouter key.
+
+- **Jev** charges only for input tokens: about $0.0001 per page, so a 50-page
+  crawl costs about half a cent.
+- **The answer model** runs once per question in most cases. With DeepSeek V4.1
+  Flash that is about $0.0003.
+
+The JIIT example above cost $0.0013 in total.
+
+## License
+
+sift is licensed under the [Apache License 2.0](LICENSE).
+
+This product includes software developed by UncleCode (https://x.com/unclecode)
+as part of the Crawl4AI project (https://github.com/unclecode/crawl4ai).
