@@ -1,8 +1,8 @@
-# ask-site
+# sift
 
-Ask a question about a website. Get a short answer, with the page it came from.
+Sift a website for the one page that answers your question. Get a short answer, with the page it came from.
 
-`ask-site` crawls a site one page at a time. Each page is checked by
+`sift` crawls a site one page at a time. Each page is checked by
 [Jev](https://openrouter.ai/typesafe/jev-1.13), a small and cheap **decision
 model**: "does this page answer the question?" The crawl stops at the first
 page that does, and only that page goes to an LLM for the answer.
@@ -11,7 +11,7 @@ Sending every page of a website to an LLM is slow and expensive. Jev costs a
 fraction of a cent for a whole crawl, so the LLM reads one page instead of fifty.
 
 ```
-$ ask-site https://fossunited.org/indiafoss/2026 \
+$ sift https://fossunited.org/indiafoss/2026 \
     "Does IndiaFOSS 2026 offer on-spot lightning talks that I can sign up for after arriving at the venue?" \
     --filter indiafoss
 
@@ -85,7 +85,7 @@ export OPENROUTER_API_KEY=sk-or-...
 The crawler uses a headless browser. Install it once:
 
 ```bash
-uvx --from git+https://github.com/SohamKukreti/ask-site ask-site-setup
+uvx --from git+https://github.com/SohamKukreti/sift sift-setup
 ```
 
 ## Two ways to use it
@@ -93,27 +93,27 @@ uvx --from git+https://github.com/SohamKukreti/ask-site ask-site-setup
 ### 1. In Claude Code (a skill)
 
 ```
-/plugin marketplace add SohamKukreti/ask-site
-/plugin install ask-site@ask-site
+/plugin marketplace add SohamKukreti/sift
+/plugin install sift@sift
 ```
 
 Then just ask: *"Check fossunited.org/indiafoss/2026: can I give a talk without applying first?"*
 
-The `ask-site` skill tells Claude when to crawl a site and how to run the
-`ask-site` command. Claude reads the page that Jev picks and answers from it.
+The `sift` skill tells Claude when to crawl a site and how to run the
+`sift` command. Claude reads the page that Jev picks and answers from it.
 
 ### 2. On the command line
 
 ```bash
-uvx --from git+https://github.com/SohamKukreti/ask-site ask-site <url> "<question>" [options]
+uvx --from git+https://github.com/SohamKukreti/sift sift <url> "<question>" [options]
 ```
 
 Or install it:
 
 ```bash
-git clone https://github.com/SohamKukreti/ask-site && cd ask-site
+git clone https://github.com/SohamKukreti/sift && cd sift
 pip install -e .
-ask-site <url> "<question>" [options]
+sift <url> "<question>" [options]
 ```
 
 | Option | Default | What it does |
@@ -130,25 +130,25 @@ Examples:
 
 ```bash
 # Check your filter for free first
-ask-site https://fossunited.org/indiafoss/2026 "Is there childcare?" \
+sift https://fossunited.org/indiafoss/2026 "Is there childcare?" \
   --filter indiafoss --max-pages 10 --crawl-only
 
 # Push the crawl towards the schedule
-ask-site https://fossunited.org/indiafoss/2026 "When is the keynote?" \
+sift https://fossunited.org/indiafoss/2026 "When is the keynote?" \
   --filter indiafoss --keywords schedule keynote
 ```
 
 ## Project layout
 
 ```
-ask_site/
+sift/
   crawl.py        crawl4ai setup: filters, keyword ranking, clean page text
   jev.py          one Jev call: "does this page answer the question?"
   claude_cli.py   one Claude call: a short answer from one page
   search.py       the loop: crawl, check with Jev, answer, stop
-  cli.py          the ask-site command
-  setup.py        the ask-site-setup command (downloads the browser)
-skills/ask-site/  the Claude Code skill
+  cli.py          the sift command
+  setup.py        the sift-setup command (downloads the browser)
+skills/sift/      the Claude Code skill
 .claude-plugin/   plugin + marketplace files, so the skill installs with /plugin
 ```
 
@@ -156,10 +156,10 @@ Settings you might want to change:
 
 | Setting | File | Default |
 | --- | --- | --- |
-| `RELEVANCE_THRESHOLD`: how sure Jev must be before we ask for an answer | `ask_site/search.py` | `0.6` |
-| `MIN_PAGE_LENGTH`: skip pages with less text (login walls) | `ask_site/search.py` | `50` characters |
-| `CHUNK_SIZE`: how much text Jev sees per call | `ask_site/crawl.py` | `50_000` characters |
-| Claude model | `ask_site/claude_cli.py` | `sonnet` |
+| `RELEVANCE_THRESHOLD`: how sure Jev must be before we ask for an answer | `sift/search.py` | `0.6` |
+| `MIN_PAGE_LENGTH`: skip pages with less text (login walls) | `sift/search.py` | `50` characters |
+| `CHUNK_SIZE`: how much text Jev sees per call | `sift/crawl.py` | `50_000` characters |
+| Claude model | `sift/claude_cli.py` | `sonnet` |
 
 ## Cost
 

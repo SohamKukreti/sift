@@ -1,4 +1,4 @@
-"""ask-site: crawl a website and answer a question about it.
+"""sift: crawl a website and answer a question about it.
 
 crawl4ai crawls, Jev picks the relevant page, Claude (or your AI) answers.
 """

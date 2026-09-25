@@ -1,5 +1,5 @@
 {
-  "name": "ask-site",
+  "name": "sift",
   "owner": {
     "name": "Soham Kukreti"
   },
@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "ask-site",
+      "name": "sift",
       "source": "./",
       "description": "Crawl a website and answer a question about it, using Jev to find the relevant page."
     }

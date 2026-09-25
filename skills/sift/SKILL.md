@@ -1,16 +1,16 @@
 ---
-name: ask-site
+name: sift
 description: Answer a question about a specific website by crawling it. Use when the user asks something that a website should answer (an event, a project's docs, a company's policy) and gives the site or it is obvious which site to look at. Crawls page by page and stops at the first relevant page, so it is cheaper than reading the whole site.
 ---
 
-# ask-site
+# sift
 
 Find the page on a website that answers a question, then answer from that page.
 
 ## Run it
 
 ```bash
-uvx --from "${CLAUDE_PLUGIN_ROOT}" ask-site <url> "<question>" --no-claude [options]
+uvx --from "${CLAUDE_PLUGIN_ROOT}" sift <url> "<question>" --no-claude [options]
 ```
 
 - Always pass a full URL, starting with `https://`.
@@ -49,5 +49,5 @@ uvx --from "${CLAUDE_PLUGIN_ROOT}" ask-site <url> "<question>" --no-claude [opti
 - `OPENROUTER_API_KEY is not set`: the user must export it, or put it in a `.env` file in the
   current folder. Get a key at https://openrouter.ai/settings/keys.
 - `uvx: command not found`: the user must install uv: https://docs.astral.sh/uv/
-- A Playwright or browser error: run `uvx --from "${CLAUDE_PLUGIN_ROOT}" ask-site-setup` once,
+- A Playwright or browser error: run `uvx --from "${CLAUDE_PLUGIN_ROOT}" sift-setup` once,
   then try again.

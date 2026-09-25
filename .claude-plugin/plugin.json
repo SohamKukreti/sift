@@ -1,7 +1,7 @@
 {
-  "name": "ask-site",
+  "name": "sift",
   "description": "A skill that crawls a website and answers a question about it. Jev (a cheap decision model on OpenRouter) finds the relevant page, Claude answers from it.",
   "version": "0.1.0",
   "author": { "name": "Soham Kukreti" },
-  "repository": "https://github.com/SohamKukreti/ask-site"
+  "repository": "https://github.com/SohamKukreti/sift"
 }

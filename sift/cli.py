@@ -1,4 +1,4 @@
-"""Command line: ask-site <url> "<question>" [options]"""
+"""Command line: sift <url> "<question>" [options]"""
 
 import argparse
 import asyncio
@@ -12,7 +12,7 @@ from .search import search_site
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog="ask-site",
+        prog="sift",
         description="Crawl a website and answer a question about it. "
                     "Jev picks the relevant page, Claude writes the answer.",
     )

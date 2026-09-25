@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ask-site"
+name = "sift-crawl"
 version = "0.1.0"
 description = "Crawl a website and answer a question about it. Jev picks the relevant page, Claude writes the answer."
 readme = "README.md"
@@ -15,8 +15,8 @@ dependencies = [
 ]
 
 [project.scripts]
-ask-site = "ask_site.cli:main"
-ask-site-setup = "ask_site.setup:main"
+sift = "sift.cli:main"
+sift-setup = "sift.setup:main"
 
 [tool.setuptools]
-packages = ["ask_site"]
+packages = ["sift"]

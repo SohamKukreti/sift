@@ -1,11 +1,11 @@
-"""ask-site-setup: download the browser the crawler needs. Run it once."""
+"""sift-setup: download the browser the crawler needs. Run it once."""
 
 import subprocess
 import sys
 
 
 def main():
-    # Use this Python, so the browser matches the Playwright version ask-site runs with.
+    # Use this Python, so the browser matches the Playwright version sift runs with.
     subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
 
 
