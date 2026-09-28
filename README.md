@@ -126,6 +126,32 @@ sift-setup
 sift <url> "<question>" [options]
 ```
 
+## Web page
+
+`web/` has a small web page for sift. It runs the same loop in your browser.
+
+```bash
+python web/serve.py          # then open http://localhost:8000
+```
+
+The page can fetch pages two ways:
+
+- **On this computer**: crawl4ai runs a browser on your machine. You need only
+  an OpenRouter key, and crawling is free. This needs crawl4ai and its browser
+  (`pip install -e .` and `sift-setup`). If they are missing, the page offers
+  only the cloud.
+- **With Crawl4AI Cloud**: paste a Crawl4AI Cloud key too. Nothing to install.
+
+If an answer is not the one you want, click **not it? keep looking**. The crawl
+goes on from the same place: the rest of that page, then the links it had not
+visited yet. You can also stop a crawl and go on with it later.
+
+`serve.py` serves the page and does what a browser can't do on its own: it
+runs crawl4ai locally, forwards calls to Crawl4AI Cloud (the cloud has no CORS
+headers), and downloads PDFs. It keeps no keys. Cloud mode needs only Python's
+standard library. To put the page online, run `python web/serve.py --cloud-only`
+on the host, so visitors don't use the server's browser.
+
 ## Options
 
 | Option | Default | What it does |
@@ -168,6 +194,11 @@ sift/
   search.py       the loop: crawl, check with Jev, answer, stop
   cli.py          the sift command
   setup.py        the sift-setup command (downloads the browser)
+web/
+  index.html      the web page
+  app.js          the same crawl, Jev and answer loop, in the browser
+  style.css
+  serve.py        serves the page, runs local crawl4ai, forwards cloud and PDF requests
 ```
 
 Settings you might want to change:

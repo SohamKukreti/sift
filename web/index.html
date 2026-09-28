@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sift</title>
+  <meta name="description" content="Ask a website a question. sift goes through the pages and keeps the one that answers it.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 10h24l-5 14H9z' fill='none' stroke='%23b4471f' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M9 15h14M11 19h10' stroke='%23b4471f' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Young+Serif&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="mesh" aria-hidden="true"></div>
+
+  <main>
+    <header>
+      <h1>sift</h1>
+      <p class="lede">
+        Give it a website and a question. It goes through the pages one by one,
+        throws out the junk, and keeps the page that has your answer.
+      </p>
+    </header>
+
+    <form id="ask" autocomplete="off">
+      <label class="field">
+        <span>website</span>
+        <input id="url" type="url" placeholder="https://www.example.com" required>
+      </label>
+
+      <label class="field">
+        <span>question</span>
+        <textarea id="question" rows="2" placeholder="What do you want to know?" required></textarea>
+      </label>
+
+      <p class="examples">
+        or try one:
+        <button type="button" class="example" data-url="https://www.jiit.ac.in"
+          data-q="Will everyone be given the degree on stage at JIIT convocation 2026?">JIIT convocation</button>
+        <button type="button" class="example" data-url="https://fossunited.org/indiafoss/2026"
+          data-q="When is the keynote?" data-filter="indiafoss">IndiaFOSS keynote</button>
+      </p>
+
+      <fieldset class="mode">
+        <legend>fetch pages</legend>
+        <label class="choice" id="local-choice">
+          <input type="radio" name="mode" value="local">
+          <span>on this computer <small id="local-note">free. needs crawl4ai installed</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="mode" value="cloud">
+          <span>with Crawl4AI Cloud <small>about $0.001 a page</small></span>
+        </label>
+      </fieldset>
+
+      <details class="drawer" id="keys-drawer">
+        <summary>your keys <span id="keys-state" class="hint"></span></summary>
+        <div class="drawer-body">
+          <label class="field small" id="c4-field">
+            <span>Crawl4AI Cloud</span>
+            <input id="c4-key" type="password" placeholder="sk_live_..." spellcheck="false">
+          </label>
+          <label class="field small">
+            <span>OpenRouter</span>
+            <input id="or-key" type="password" placeholder="sk-or-..." spellcheck="false">
+          </label>
+          <label class="check">
+            <input id="remember" type="checkbox"> remember them in this browser
+          </label>
+          <p class="note">
+            Your keys go only to Crawl4AI and OpenRouter.
+            No key yet? Get one at <a href="https://api.crawl4ai.com/" target="_blank" rel="noopener">api.crawl4ai.com</a>
+            and <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai</a>.
+          </p>
+        </div>
+      </details>
+
+      <details class="drawer">
+        <summary>knobs</summary>
+        <div class="drawer-body grid">
+          <label class="field small">
+            <span>only follow links with</span>
+            <input id="filter" type="text" placeholder="same site">
+          </label>
+          <label class="field small">
+            <span>rank links by</span>
+            <input id="keywords" type="text" placeholder="words from your question">
+          </label>
+          <label class="field small">
+            <span>max pages</span>
+            <input id="max-pages" type="number" min="1" max="200" value="50">
+          </label>
+          <label class="field small">
+            <span>max depth</span>
+            <input id="max-depth" type="number" min="0" max="6" value="3">
+          </label>
+          <label class="field small wide">
+            <span>answer model</span>
+            <input id="model" type="text" value="deepseek/deepseek-v4.1-flash" spellcheck="false">
+          </label>
+          <p class="note wide">Separate several words with commas. Link words are matched against the URL, so pick URL-like words: <code>schedule</code>, <code>faq</code>, <code>fees</code>.</p>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="go" type="submit" class="go">sift it</button>
+        <button id="stop" type="button" class="stop" hidden>stop</button>
+        <span id="status" class="status" aria-live="polite"></span>
+      </div>
+    </form>
+
+    <section id="result" class="result" hidden aria-live="polite"></section>
+
+    <section id="run" class="run" hidden>
+      <div class="run-head">
+        <h2>the pile</h2>
+        <span id="tally" class="tally"></span>
+      </div>
+      <p class="legend">
+        Each page gets a score from <a href="https://openrouter.ai/typesafe/jev-1.13" target="_blank" rel="noopener">Jev</a>:
+        how sure it is that the page answers you. Past the line <span class="tick-demo"></span> means we read it.
+      </p>
+      <ol id="pages" class="pages collapsed"></ol>
+      <button id="fold" type="button" class="fold" hidden></button>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      sift is open source. <a href="https://github.com/SohamKukreti/sift" target="_blank" rel="noopener">the code</a>,
+      and a command line version if you like terminals better.
+      Pages are fetched by <a href="https://github.com/unclecode/crawl4ai" target="_blank" rel="noopener">crawl4ai</a>.
+    </p>
+  </footer>
+
+  <template id="page-row">
+    <li class="page">
+      <span class="n"></span>
+      <a class="url" target="_blank" rel="noopener"></a>
+      <span class="meter"><span class="fill"></span></span>
+      <span class="verdict"></span>
+    </li>
+  </template>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
