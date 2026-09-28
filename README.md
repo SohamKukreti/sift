@@ -156,20 +156,6 @@ sift https://www.jiit.ac.in "Is there a dress code for convocation?" \
   --model google/gemini-3.1-flash-lite
 ```
 
-## Optional: use it from an AI coding agent
-
-The repo also ships a skill (a short instruction file for an AI agent) in
-`skills/sift/`, packaged as a Claude Code plugin:
-
-```
-/plugin marketplace add SohamKukreti/sift
-/plugin install sift@sift
-```
-
-Then ask: *"Check fossunited.org/indiafoss/2026: can I give a talk without applying first?"*
-The agent runs `sift --no-llm`, reads the page that Jev picked, and writes the
-answer itself.
-
 ## Project layout
 
 ```
@@ -182,8 +168,6 @@ sift/
   search.py       the loop: crawl, check with Jev, answer, stop
   cli.py          the sift command
   setup.py        the sift-setup command (downloads the browser)
-skills/sift/      optional skill for AI coding agents
-.claude-plugin/   plugin files, so the skill installs with /plugin
 ```
 
 Settings you might want to change:
