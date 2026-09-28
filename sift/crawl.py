@@ -1,13 +1,21 @@
-"""Step 1: crawl the site with crawl4ai, best-looking links first."""
+"""Step 1: crawl the site with crawl4ai on this machine, best-looking links first.
+
+The helpers here (keywords, filters, chunks) are shared with the cloud crawl in cloud.py.
+"""
 
 import re
+from contextlib import aclosing
+from dataclasses import dataclass
+from typing import Optional
 from urllib.parse import urlparse
 
-from crawl4ai import CacheMode, CrawlerRunConfig, PruningContentFilterLXML
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig, PruningContentFilterLXML
 from crawl4ai.deep_crawling import BestFirstCrawlingStrategy
 from crawl4ai.deep_crawling.filters import DomainFilter, FilterChain, URLPatternFilter
 from crawl4ai.deep_crawling.scorers import KeywordRelevanceScorer
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+
+from .pdf import is_pdf, pdf_text
 
 # Jev reads up to 32k tokens. 50k characters is about 12.5k tokens: a safe size.
 CHUNK_SIZE = 50_000
@@ -25,6 +33,16 @@ STOPWORDS = set("""
     over under again also just only very such own same too i'm am have has had
     looking look find know want give given offer offers arriving
 """.split())
+
+
+@dataclass
+class Page:
+    """One crawled page, the same shape for the local and the cloud crawl."""
+    url: str
+    depth: int
+    text: Optional[str] = None   # None when the page failed
+    error: Optional[str] = None
+    credits: float = 0.0         # Crawl4AI Cloud credits this page cost (0 for a local crawl)
 
 
 def words_in(text):
@@ -71,6 +89,30 @@ def make_crawl_config(strategy):
         markdown_generator=DefaultMarkdownGenerator(content_filter=PruningContentFilterLXML()),
         verbose=False,
     )
+
+
+async def local_pages(url, filters, keywords, max_pages, max_depth, headless=True):
+    """Crawl with a browser on this machine. Yield each page as a Page."""
+    strategy = make_crawl_strategy(url, filters, keywords, max_pages, max_depth)
+    config = make_crawl_config(strategy)
+    try:
+        async with AsyncWebCrawler(config=BrowserConfig(headless=headless, verbose=False)) as crawler:
+            async with aclosing(await crawler.arun(url, config=config)) as results:
+                async for result in results:
+                    page = Page(result.url, result.metadata.get("depth"))
+                    try:
+                        # The browser can't show PDFs, so we download and read them ourselves.
+                        if is_pdf(result.url):
+                            page.text = pdf_text(result.url)
+                        elif result.success:
+                            page.text = page_text(result)
+                        else:
+                            page.error = result.error_message or "unknown error"
+                    except Exception as error:
+                        page.error = str(error) or type(error).__name__
+                    yield page
+    finally:
+        strategy.cancel()
 
 
 def page_text(page):

@@ -1,13 +1,12 @@
 """The main loop: crawl pages one by one until one of them answers the question."""
 
+from contextlib import aclosing
 from dataclasses import dataclass
 from typing import Callable, Optional, Tuple
 
-from crawl4ai import AsyncWebCrawler, BrowserConfig
-
-from .crawl import keywords_from_question, make_crawl_config, make_crawl_strategy, page_text, split_into_chunks
+from .cloud import cloud_pages
+from .crawl import keywords_from_question, local_pages, split_into_chunks
 from .jev import ask_jev
-from .pdf import is_pdf, pdf_text
 
 # A page is "relevant" when Jev's probability is at or above this.
 RELEVANCE_THRESHOLD = 0.6
@@ -28,6 +27,7 @@ class SearchResult:
     pages_seen: int = 0
     jev_cost: float = 0.0
     llm_cost: float = 0.0
+    cloud_credits: float = 0.0       # Crawl4AI Cloud credits (cloud mode only)
 
     @property
     def found(self):
@@ -44,10 +44,14 @@ async def search_site(
     max_depth=3,
     answerer: Optional[Answerer] = None,
     crawl_only=False,
+    cloud=False,
     headless=True,
     log=print,
 ):
     """Crawl `url` best-first and stop at the first page that answers `question`.
+
+    With `cloud=True`, Crawl4AI Cloud fetches the pages (no local browser).
+    Otherwise crawl4ai runs a browser on this machine.
 
     Every page is checked by Jev. When a page passes:
       - with an `answerer` (an LLM), we ask it for the answer. If it finds
@@ -55,48 +59,40 @@ async def search_site(
       - without one, we stop and return the page text, so the caller can answer.
     """
     keywords = keywords or keywords_from_question(question, url)
-    strategy = make_crawl_strategy(url, filters, keywords, max_pages, max_depth)
-    config = make_crawl_config(strategy)
     result = SearchResult()
 
     log(f"Keywords : {keywords}")
 
-    async with AsyncWebCrawler(config=BrowserConfig(headless=headless, verbose=False)) as crawler:
-        async for page in await crawler.arun(url, config=config):
+    if cloud:
+        pages = cloud_pages(url, filters, keywords, max_pages, max_depth)
+    else:
+        pages = local_pages(url, filters, keywords, max_pages, max_depth, headless=headless)
+
+    async with aclosing(pages):
+        async for page in pages:
             # crawl4ai can hand out a few more pages than max_pages, so we count too.
             if result.pages_seen >= max_pages:
                 break
             result.pages_seen += 1
-            label = f"[{result.pages_seen:>2}] depth={page.metadata.get('depth')}"
+            result.cloud_credits += page.credits
+            label = f"[{result.pages_seen:>2}] depth={page.depth}"
 
-            try:
-                text = read_page(page)
-            except Exception as error:
-                log(f"{label}  FAILED   {page.url}  ({first_line(error)})")
+            if page.error is not None:
+                log(f"{label}  FAILED   {page.url}  ({first_line(page.error)})")
                 continue
 
             if crawl_only:
-                log(f"{label}  {len(text):>6} chars  {page.url}")
+                log(f"{label}  {len(page.text):>6} chars  {page.url}")
                 continue
 
-            if len(text.strip()) < MIN_PAGE_LENGTH:
+            if len(page.text.strip()) < MIN_PAGE_LENGTH:
                 log(f"{label}  empty    {page.url}")
                 continue
 
-            if await check_page(question, page.url, text, answerer, result, label, log):
+            if await check_page(question, page.url, page.text, answerer, result, label, log):
                 break
 
-    strategy.cancel()
     return result
-
-
-def read_page(page):
-    """The text of a crawled page. PDFs are downloaded and read separately."""
-    if is_pdf(page.url):
-        return pdf_text(page.url)
-    if not page.success:
-        raise RuntimeError(page.error_message or "unknown error")
-    return page_text(page)
 
 
 def first_line(error):

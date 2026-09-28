@@ -62,7 +62,8 @@ the LLM once, and spent less than a cent and a half in total.
 ```
 
 1. **Crawl**: [crawl4ai](https://github.com/unclecode/crawl4ai) does a
-   best-first deep crawl. It only follows links that match `--filter` (or stay
+   best-first deep crawl, with a browser on your machine or, with
+   `--mode cloud`, through [Crawl4AI Cloud](#cloud-mode). It only follows links that match `--filter` (or stay
    on the same domain), and visits links whose URL matches keywords from your
    question first. Menus and footers are removed from each page. PDF links are
    downloaded and read too, since that is where universities and events often
@@ -96,6 +97,26 @@ uvx --from git+https://github.com/SohamKukreti/sift sift <url> "<question>" [opt
 
 You can also put the key in a `.env` file in the folder you run from.
 
+## Cloud mode
+
+By default, sift runs a browser on your machine (`--mode local`). With
+`--mode cloud`, [Crawl4AI Cloud](https://api.crawl4ai.com/docs) fetches the
+pages instead. You do not need a browser or `sift-setup`, and the cloud
+handles JavaScript-heavy pages and bot walls for you.
+
+```bash
+export CRAWL4AI_API_KEY=sk_live_...   # get one at https://api.crawl4ai.com/
+sift https://www.jiit.ac.in "Will everyone be given the degree on stage at JIIT convocation 2026?" --mode cloud
+```
+
+The cloud scrapes one page per call, so sift follows the links itself, with
+the same filters and keyword ranking as local mode. PDFs are still downloaded
+and read on your machine, because the cloud does not read them.
+
+Cost: about 1 credit ($0.001) per page, less for a page the cloud already has
+in its archive. sift prints the total. The free plan allows 5 pages a minute,
+and sift waits when it reaches that limit, so a long crawl is slower.
+
 To install it as a normal command instead (Python 3.10+):
 
 ```bash
@@ -116,7 +137,8 @@ sift <url> "<question>" [options]
 | `--model NAME` | `deepseek/deepseek-v4.1-flash` | Any [OpenRouter model](https://openrouter.ai/models) for the answer. |
 | `--no-llm` | off | Don't call the answer model. Print the relevant page instead. |
 | `--crawl-only` | off | Only list the pages that would be crawled. No Jev or LLM calls, so it costs nothing. Useful for tuning filters. |
-| `--show-browser` | off | Show the browser window while crawling. Nice for demos. |
+| `--mode local\|cloud` | `local` | `local`: a browser on your machine. `cloud`: Crawl4AI Cloud (needs `CRAWL4AI_API_KEY`). |
+| `--show-browser` | off | Show the browser window while crawling (local mode). Nice for demos. |
 
 Examples:
 

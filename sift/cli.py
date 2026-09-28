@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 from dotenv import find_dotenv, load_dotenv
 
+from .cloud import OutOfCredit
 from .llm import DEFAULT_MODEL, make_answerer
 from .search import search_site
 
@@ -38,7 +39,12 @@ def parse_args():
         help="Don't call the LLM. Print the first relevant page's text instead.",
     )
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"OpenRouter model for the answer (default {DEFAULT_MODEL}).")
-    parser.add_argument("--show-browser", action="store_true", help="Show the browser window while crawling.")
+    parser.add_argument(
+        "--mode", choices=["local", "cloud"], default="local",
+        help="local: crawl with a browser on this machine (default). "
+             "cloud: fetch pages with Crawl4AI Cloud (needs CRAWL4AI_API_KEY, no browser).",
+    )
+    parser.add_argument("--show-browser", action="store_true", help="Show the browser window while crawling (local mode).")
     return parser.parse_args()
 
 
@@ -51,20 +57,28 @@ def main():
     print(f"Start    : {args.url}")
     print(f"Filter   : {scope}")
     print(f"Limits   : max_pages={args.max_pages} max_depth={args.max_depth}")
+    print(f"Mode     : {args.mode}")
 
-    result = asyncio.run(search_site(
-        args.url,
-        args.question,
-        filters=args.filter,
-        keywords=args.keywords,
-        max_pages=args.max_pages,
-        max_depth=args.max_depth,
-        answerer=None if args.no_llm else make_answerer(args.model),
-        crawl_only=args.crawl_only,
-        headless=not args.show_browser,
-    ))
+    try:
+        result = asyncio.run(search_site(
+            args.url,
+            args.question,
+            filters=args.filter,
+            keywords=args.keywords,
+            max_pages=args.max_pages,
+            max_depth=args.max_depth,
+            answerer=None if args.no_llm else make_answerer(args.model),
+            crawl_only=args.crawl_only,
+            cloud=args.mode == "cloud",
+            headless=not args.show_browser,
+        ))
+    except OutOfCredit as error:
+        raise SystemExit(f"\nCrawl4AI Cloud: out of credit. {error}")
 
     print(f"\nPages crawled: {result.pages_seen}")
+    if args.mode == "cloud":
+        # 1 credit = $0.001
+        print(f"Cloud cost: {result.cloud_credits:.1f} credits (${result.cloud_credits / 1000:.6f})")
     if args.crawl_only:
         return
     print(f"Jev cost: ${result.jev_cost:.6f}")

@@ -34,6 +34,8 @@ uvx --from "${CLAUDE_PLUGIN_ROOT}" sift <url> "<question>" --no-llm [options]
 - `--max-pages N`: default 50. Use 30 unless the user asks for more. Every page costs a
   little (Jev), so don't raise it without a reason.
 - `--max-depth N`: default 3.
+- `--mode cloud`: fetch pages with Crawl4AI Cloud instead of a local browser. Use it when
+  `CRAWL4AI_API_KEY` is set (in the environment or `.env`), or when the local browser fails.
 
 ## Read the output
 
@@ -49,5 +51,9 @@ uvx --from "${CLAUDE_PLUGIN_ROOT}" sift <url> "<question>" --no-llm [options]
 - `OPENROUTER_API_KEY is not set`: the user must export it, or put it in a `.env` file in the
   current folder. Get a key at https://openrouter.ai/settings/keys.
 - `uvx: command not found`: the user must install uv: https://docs.astral.sh/uv/
+- `CRAWL4AI_API_KEY is not set` (cloud mode): the user must set it. Get a key at
+  https://api.crawl4ai.com/. Or run without `--mode cloud`.
+- `Crawl4AI Cloud: out of credit`: tell the user to top up at https://api.crawl4ai.com/dashboard/,
+  or run without `--mode cloud`.
 - A Playwright or browser error: run `uvx --from "${CLAUDE_PLUGIN_ROOT}" sift-setup` once,
   then try again.
